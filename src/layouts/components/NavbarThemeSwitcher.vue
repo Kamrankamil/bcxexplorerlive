@@ -1,48 +1,60 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue';
-import { onMounted, computed } from 'vue';
-import { useBaseStore } from '@/stores';
+import { ref, onMounted } from 'vue'
+import { Icon } from '@iconify/vue'
 
-const themeMap: Record<string, string> = {
-    system: 'mdi-laptop',
-    light: 'mdi-weather-sunny',
-    dark: 'mdi-weather-night',
-};
-const baseStore = useBaseStore();
-const theme = computed(() => {
-    return baseStore.theme;
-});
+// Track the theme
+const theme = ref<'light' | 'dark'>('light')
 
-const changeMode = (val?: 'dark' | 'light') => {
-    let value: 'dark' | 'light' = 'dark';
-    const currentValue: 'dark' | 'light' = val || theme.value;
-    if (currentValue === 'dark') {
-        value = 'light';
-    }
-    if (value === 'light') {
-        document.documentElement.classList.add('light');
-        document.documentElement.classList.remove('dark');
-    } else {
-        document.documentElement.classList.add('dark');
-        document.documentElement.classList.remove('light');
-    }
-    document.documentElement.setAttribute('data-theme', value);
-    window.localStorage.setItem('theme', value);
-    baseStore.theme = value;
-};
+const themeMap: Record<'light' | 'dark', string> = {
+  light: 'mdi:weather-sunny',
+  dark: 'mdi:weather-night',
+}
 
+function changeMode() {
+  if (theme.value === 'light') {
+    document.documentElement.classList.remove('light')
+    document.documentElement.classList.add('dark')
+    document.documentElement.setAttribute('data-theme', 'dark')
+    window.localStorage.setItem('theme', 'dark')
+    theme.value = 'dark'
+  } else {
+    document.documentElement.classList.remove('dark')
+    document.documentElement.classList.add('light')
+    document.documentElement.setAttribute('data-theme', 'light')
+    window.localStorage.setItem('theme', 'light')
+    theme.value = 'light'
+  }
+}
+
+// Load saved theme on mount
 onMounted(() => {
-    changeMode(theme.value === 'light' ? 'dark' : 'light');
-});
+  const saved = window.localStorage.getItem('theme') as 'light' | 'dark' | null
+  if (saved === 'dark') {
+    theme.value = 'dark'
+    document.documentElement.classList.add('dark')
+    document.documentElement.classList.remove('light')
+    document.documentElement.setAttribute('data-theme', 'dark')
+  } else {
+    theme.value = 'light'
+    document.documentElement.classList.add('light')
+    document.documentElement.classList.remove('dark')
+    document.documentElement.setAttribute('data-theme', 'light')
+  }
+})
 </script>
 
 <template>
-    <div class="tooltip tooltip-bottom delay-1000">
-        <button
-            class="btn btn-ghost btn-circle btn-sm mx-1"
-            @click="changeMode()"
-        >
-            <Icon :icon="themeMap?.[theme]" class="text-2xl text-gray-500 dark:text-gray-400" />
-        </button>
-    </div>
+  <div class="tooltip tooltip-bottom delay-1000" data-tip="Toggle Theme">
+    <button
+      class="btn btn-circle btn-sm mx-1"
+      @click="changeMode"
+      :style="{
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backdropFilter: 'blur(6px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+      }"
+    >
+      <Icon :icon="themeMap[theme]" class="text-2xl text-white dark:text-gray-300" />
+    </button>
+  </div>
 </template>

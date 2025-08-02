@@ -4,7 +4,7 @@ import type { GovProposal, PaginatedProposals } from '@/types'
 // which registry is store
 export const store = 'name' // name or version
 // Blockchain Name
-export const name = 'evmos'
+export const name = 'buycex'
 
 function proposalAdapter(p: any): GovProposal {
     if(p) {

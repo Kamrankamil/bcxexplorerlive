@@ -3,7 +3,7 @@ import { isBech32Address } from '@/libs/utils';
 import { useBlockchain, useFormatter } from '@/stores';
 import MdEditor from 'md-editor-v3';
 import { computed, onMounted, ref } from 'vue';
-import { registry as nameMatcha } from '@leapwallet/name-matcha'
+//import { Registry } from '@leapwallet/name-matcha'
 import { fromBase64, toHex } from '@cosmjs/encoding';
 
 const chainStore = useBlockchain()
@@ -40,13 +40,13 @@ const text = computed(() => {
   return v
 })
 
-const names = ref([] as {name?: string | null, provider?: string}[])
+//const names = ref([] as {name?: string | null, provider?: string}[])
 
-onMounted(() => {
-  if(isAddress()) nameMatcha.lookupAll(props.value).then(re => {
-    names.value = Object.keys(re).map(key => ({name: re[key], provider: key})).filter( x => x.name)
-  })
-})
+//onMounted(() => {
+//  if(isAddress()) nameMatcha.lookupAll(props.value).then(re => {
+//    names.value = Object.keys(re).map(key => ({name: re[key], provider: key})).filter( x => x.name)
+//  })
+//})
 const toHexOutput = ref(false)
 const isConvertable = computed(() => {
   return String(props.value).endsWith('=') && props.value.length !== 28
@@ -60,15 +60,10 @@ const isConvertable = computed(() => {
     previewOnly
     class="md-editor-recover"
   ></MdEditor>
-  <span v-else-if="isAddress()" class="flex">
-    <RouterLink :to="`/${chainStore.chainName}/account/${text}`">{{ text }}</RouterLink>
-    <div v-for="{name, provider} in names">
-      <span class="text-xs truncate relative py-1 px-2 p2-4 w-fit ml-2 rounded text-success tooltip" :data-tip="provider" :title="provider">
-        <span class="inset-x-0 inset-y-0 opacity-10 absolute bg-success"></span>
-        <button>{{ name }}</button>
-      </span>
-    </div>
-  </span>  
+<span v-else-if="isAddress()" class="flex">
+  <RouterLink :to="`/${chainStore.chainName}/account/${text}`">{{ text }}</RouterLink>
+</span>
+ 
   <span v-else class="flex"><span class="break-words max-w-5xl">{{ text }}</span>
     <span v-if="isConvertable" @click="toHexOutput = !toHexOutput" class="ml-2 cursor-pointer">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">

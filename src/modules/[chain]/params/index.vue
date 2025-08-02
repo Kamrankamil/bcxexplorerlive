@@ -1,14 +1,36 @@
 <script lang="ts" setup>
 import { useParamStore } from '@/stores';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import CardParameter from '@/components/CardParameter.vue';
 import ArrayObjectElement from '@/components/dynamic/ArrayObjectElement.vue';
+
 const store = useParamStore();
 const chain = ref(store.chain);
+
 onMounted(() => {
-  // fetch the data
-  store.initial();
+  store.initial(); // fetch the data
 });
+
+const appVersionPatched = computed(() => {
+ const versionArray = Array.isArray(store.appVersion?.items)
+  ? [...store.appVersion.items]
+  : [];
+
+
+
+
+  const patched = versionArray?.map(item => {
+    if (item.subtitle === 'name' && item.value === 'evmos') {
+      console.log('[AppVersion] Overriding "name" from "evmos" to "bcx"');
+      return { ...item, value: 'bcx' };
+    }
+    return item;
+  });
+
+  console.log('[AppVersion] Patched:', patched);
+  return patched;
+});
+
 </script>
 <template>
   <div class="overflow-hidden">
@@ -41,7 +63,7 @@ onMounted(() => {
     <!-- Application Version -->
     <div class="bg-base-100 px-4 pt-3 pb-4 rounded-sm mt-6">
       <div class="text-base mb-3 text-main">{{ store.appVersion?.title }}</div>
-      <ArrayObjectElement :value="store.appVersion?.items" :thead="false" />
+         <ArrayObjectElement :value="appVersionPatched" :thead="false" />
     </div>
 
     <!-- Node Information -->

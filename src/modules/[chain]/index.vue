@@ -1,6 +1,88 @@
 <script lang="ts" setup>
+import { use } from 'echarts/core';
+import { CanvasRenderer } from 'echarts/renderers';
+import { BarChart, LineChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
+import VChart from 'vue-echarts';
+
+use([CanvasRenderer, BarChart, LineChart, GridComponent, TooltipComponent, LegendComponent]);
+
+import { ref } from 'vue';
+
+// Chart 1: Daily User Transactions
+const dailyUserTransactionsOption = ref({
+  tooltip: { trigger: 'axis' },
+  xAxis: {
+    type: 'category',
+    data: ['Jul 12', 'Jul 13', 'Jul 14', 'Jul 15', 'Jul 16', 'Jul 17', 'Jul 18', 'Jul 19', 'Jul 20', 'Jul 21'],
+  },
+  yAxis: {
+    type: 'value',
+    axisLabel: {
+      formatter: (value: number) => {
+        return value >= 1000000 ? value / 1000000 + 'M' : value;
+      },
+    },
+  },
+  series: [
+    {
+      data: [3800000, 4100000, 4300000, 4200000, 4000000, 4100000, 4400000, 4200000, 4400000, 4400000],
+      type: 'bar',
+      itemStyle: { color: '#6366f1' },
+      barWidth: '50%',
+    },
+  ],
+});
+
+// Chart 2: Network Fees (APT)
+const networkFeesOption = ref({
+  tooltip: { trigger: 'axis' },
+  legend: {
+    data: ['Fee (APT)', 'Avg. Fee (APT)'],
+    top: 10,
+  },
+  xAxis: {
+    type: 'category',
+    data: ['Jul 13', 'Jul 14', 'Jul 15', 'Jul 16', 'Jul 17', 'Jul 18', 'Jul 19', 'Jul 20', 'Jul 21'],
+  },
+  yAxis: [
+    {
+      type: 'value',
+      name: 'Fee (APT)',
+    },
+    {
+      type: 'value',
+      name: 'Avg. Fee (APT)',
+      position: 'right',
+      axisLabel: {
+        formatter: '{value}',
+      },
+    },
+  ],
+  series: [
+    {
+      name: 'Fee (APT)',
+      type: 'bar',
+      barWidth: 20,
+      itemStyle: { color: '#6366f1' },
+      data: [400, 420, 500, 460, 700, 900, 800, 1000, 600],
+    },
+    {
+      name: 'Avg. Fee (APT)',
+      type: 'line',
+      yAxisIndex: 1,
+      itemStyle: { color: '#9333ea' },
+      lineStyle: { width: 2 },
+      symbol: 'circle',
+      symbolSize: 6,
+      data: [0.00008, 0.0001, 0.00012, 0.00015, 0.00017, 0.0002, 0.00018, 0.00021, 0.0001],
+    },
+  ],
+});
+
 import MdEditor from 'md-editor-v3';
 import PriceMarketChart from '@/components/charts/PriceMarketChart.vue';
+
 
 import { Icon } from '@iconify/vue';
 import {
@@ -10,16 +92,18 @@ import {
   useWalletStore,
   useStakingStore,
   useParamStore,
+  useBaseStore,
 } from '@/stores';
-import { onMounted, ref } from 'vue';
-import { useIndexModule, colorMap, tickerUrl } from './indexStore';
-import { computed } from '@vue/reactivity';
 
+import { useIndexModule, colorMap, tickerUrl } from './indexStore';
+
+import TxsInBlocksChart from '@/components/charts/TxsInBlocksChart.vue';
 import CardStatisticsVertical from '@/components/CardStatisticsVertical.vue';
 import ProposalListItem from '@/components/ProposalListItem.vue';
 import ArrayObjectElement from '@/components/dynamic/ArrayObjectElement.vue'
 
 const props = defineProps(['chain']);
+const tab = ref('blocks');
 
 const blockchain = useBlockchain();
 const store = useIndexModule();
@@ -40,7 +124,9 @@ onMounted(() => {
   // }
 });
 const ticker = computed(() => store.coinInfo.tickers[store.tickerIndex]);
+const base = useBaseStore();
 
+const list = computed(() => base.recents);
 const currName = ref("")
 blockchain.$subscribe((m, s) => {
   if (s.chainName !== currName.value) {
@@ -123,6 +209,29 @@ const amount = computed({
     quantity.value = val / ticker.value.converted_last.usd || 0
   }
 })
+
+
+
+const appVersionPatched = computed(() => {
+ const versionArray = Array.isArray(paramStore.appVersion?.items)
+  ? [...paramStore.appVersion.items]
+  : [];
+
+
+
+
+  const patched = versionArray?.map(item => {
+    if (item.subtitle === 'name' && item.value === 'evmos') {
+
+      return { ...item, value: 'bcx' }
+    }
+    return item
+  })
+
+ 
+  return patched
+})
+
 
 </script>
 
@@ -258,23 +367,144 @@ const amount = computed({
       </div>
     </div>
 
+
+   <!-- Statistic Cards -->
     <div class="grid grid-cols-1 gap-4 md:!grid-cols-3 lg:!grid-cols-6 mt-4">
-      <div v-for="(item, key) in store.stats" :key="key">
-        <CardStatisticsVertical v-bind="item" />
-      </div>
+  <div v-for="(item, key) in store.stats" :key="key">
+    <CardStatisticsVertical v-bind="item" />
+  </div>
+  </div>
+
+<!-- Charts Section with top margin -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+  <div class="bg-base-100 rounded p-4 shadow">
+    <h3 class="font-semibold text-base mb-2">Daily User Transactions</h3>
+    <v-chart class="h-72 w-full" :option="dailyUserTransactionsOption" autoresize />
+  </div>
+
+  <div class="bg-base-100 rounded p-4 shadow">
+    <h3 class="font-semibold text-base mb-2">Network Fees (APT)</h3>
+    <v-chart class="h-72 w-full" :option="networkFeesOption" autoresize />
+  </div>
+  </div>
+
+  <div class="w-full">
+  <div class="overflow-x-auto w-full mt-4 rounded bg-base-100 shadow">
+    <div class="tabs tabs-boxed bg-transparent mb-4">
+      <a
+        class="tab text-gray-400 uppercase"
+        :class="{ 'tab-active': tab === 'blocks' }"
+        @click="tab = 'blocks'"
+      >
+        {{ $t('block') }}
+      </a>
+      <a
+        class="tab text-gray-400 uppercase"
+        :class="{ 'tab-active': tab === 'transactions' }"
+        @click="tab = 'transactions'"
+      >
+        {{ $t('Transaction') }}
+      </a>
     </div>
 
-    <div v-if="blockchain.supportModule('governance')" class="bg-base-100 rounded mt-4 shadow">
-      <div class="px-4 pt-4 pb-2 text-lg font-semibold text-main">
-        {{ $t('index.active_proposals') }}
-      </div>
-      <div class="px-4 pb-4">
-        <ProposalListItem :proposals="store?.proposals" />
-      </div>
-      <div class="pb-8 text-center" v-if="store.proposals?.proposals?.length === 0">
-        {{ $t('index.no_active_proposals') }}
+    <!-- BLOCKS -->
+  <div v-show="tab === 'blocks'"  class="bg-base-100 rounded overflow-x-auto w-full">
+  <table class="w-full table table-compact table-fixed">
+    <thead>
+    <tr class="bg-gray-50 dark:bg-[#1c2234] text-xs uppercase text-gray-500">
+      <th class="p-3 w-[12%]">Block Height</th>
+      <th class="p-3 w-[12%]">Age</th>
+      <th class="p-3 w-[16%]">Generated By</th>
+      <th class="p-3 w-[12%]">Transactions</th>
+      <th class="p-3 w-[12%]">Round</th>
+      <th class="p-3 w-[36%]">Hash</th>
+    </tr>
+      </thead>
+    <tbody>
+    <tr
+      v-for="item in [...list].reverse().slice(0, 10)"
+      :key="item.block.header.height"
+      class="hover text-sm"
+    >
+      <td class="p-3">
+        <RouterLink
+          class="link link-primary no-underline"
+          :to="`/${chain}/block/${item.block.header.height}`"
+        >
+          {{ item.block.header.height }}
+        </RouterLink>
+      </td>
+      <td class="p-3">{{ format.toDay(item.block?.header?.time, 'from') }}</td>
+      <td class="p-3">{{ format.validator(item.block?.header?.proposer_address) }}</td>
+      <td class="p-3">{{ item.block?.data?.txs.length || 0 }}</td>
+      <td class="p-3">{{ item.block?.last_commit?.round }}</td>
+      <td class="p-3 text-xs text-gray-400 break-words whitespace-pre-wrap">
+        {{ item.block_id.hash }}
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+
+  <div class="flex justify-between items-center px-4 py-5 border-t mt-8">
+    <div class="text-xs text-gray-400">
+      {{ list.length.toLocaleString() }} Blocks
+    </div>
+    <RouterLink
+      v-if="list.length > 10"
+      to="/buycex/block"
+      class="btn btn-sm bg-[#1a5fff] hover:bg-[#174ad1] text-white rounded px-4"
+    >
+      View All &nbsp; →
+    </RouterLink>
+  </div>
+</div>
+
+
+    <!-- TRANSACTIONS -->
+    <div v-show="tab === 'transactions'" class="bg-base-100 rounded overflow-x-auto w-full">
+      <table class="w-full table table-compact">
+        <thead class="bg-gray-50 dark:bg-[#1c2234]">
+          <tr>
+            <th>{{ $t('account.height') }}</th>
+            <th>{{ $t('account.hash') }}</th>
+            <th>{{ $t('account.messages') }}</th>
+            <th>{{ $t('block.fees') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(item, index) in base.txsInRecents" :index="index" class="hover">
+            <td class="text-sm text-primary">
+              <RouterLink :to="`/${props.chain}/block/${item.height}`">{{ item.height }}</RouterLink>
+            </td>
+            <td class="truncate text-primary" width="50%">
+              <RouterLink :to="`/${props.chain}/tx/${item.hash}`">{{ item.hash }}</RouterLink>
+            </td>
+            <td>{{ format.messages(item.tx.body.messages) }}</td>
+            <td>{{ format.formatTokens(item.tx.authInfo.fee?.amount) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="p-4">
+        <div class="alert relative bg-transparent">
+          <div class="alert absolute inset-x-0 inset-y-0 w-full h-full bg-info opacity-10"></div>
+          <div class="text-info flex gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              class="stroke-current flex-shrink-0 w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>{{ $t('block.only_tx') }}</span>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
+</div>
+
+
+  
 
     <div class="bg-base-100 rounded mt-4 shadow">
       <div class="flex justify-between px-4 pt-4 pb-2 text-lg font-semibold text-main">
@@ -385,13 +615,12 @@ const amount = computed({
     </div>
 
     <div class="bg-base-100 rounded mt-4">
-      <div class="px-4 pt-4 pb-2 text-lg font-semibold text-main">
-        {{ $t('index.app_versions') }}
-      </div>
-      <!-- Application Version -->
-      <ArrayObjectElement :value="paramStore.appVersion?.items" :thead="false" />
-      <div class="h-4"></div>
+    <div class="px-4 pt-4 pb-2 text-lg font-semibold text-main">
+      {{ $t('index.app_versions') }}
     </div>
+    <ArrayObjectElement :value="appVersionPatched" :thead="false" />
+    <div class="h-4"></div>
+  </div>
 
     <div v-if="!store.coingeckoId" class="bg-base-100 rounded mt-4">
       <div class="px-4 pt-4 pb-2 text-lg font-semibold text-main">

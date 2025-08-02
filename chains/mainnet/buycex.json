@@ -1,0 +1,21 @@
+{
+    "chain_name": "buycex",
+    "coingecko": "",
+    "api": ["https://api.buycex.net"],
+    "rpc": ["https://endpoint.buycex.net"],
+    "snapshot_provider": "",
+    "sdk_version": "0.46.10",
+    "coin_type": "60",
+    "min_tx_fee": "3000000000000000",
+    "addr_prefix": "bcx",
+    "logo": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bcx_323/chain.png",
+    "keplr_features": ["ibc-transfer", "ibc-go", "eth-address-gen", "eth-key-sign"],
+    "assets": [{
+        "base": "ubcx",
+        "symbol": "bcx",
+        "exponent": "18",
+        "coingecko_id": "", 
+        "logo": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bcx_323/chain.png"
+    }]
+    
+}
