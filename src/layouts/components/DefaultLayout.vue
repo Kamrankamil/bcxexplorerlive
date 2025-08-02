@@ -87,35 +87,93 @@ const show_ad = computed(() => {
       </RouterLink>
 
       <!-- Flat Menu -->
-      <div class="flex gap-6 items-center overflow-x-auto">
-        <template
-          v-for="(item, index) in blockchain.computedChainMenu.filter(i =>
-            !['ecosystem', 'favorite', 'allblockchains', 'tools', 'wallethelper', 'sponsors', 'cosmoshub', 'osmosis', 'celestia']
-              .includes(i.title?.toLowerCase()?.replace(/\s+/g, ''))
-          )"
-          :key="index"
+ <div class="relative flex gap-6 items-center overflow-visible">
+  <template
+    v-for="(item, index) in blockchain.computedChainMenu.filter(i =>
+      !['ecosystem', 'favorite', 'allblockchains', 'tools', 'wallethelper', 'sponsors', 'cosmoshub', 'osmosis', 'celestia']
+        .includes(i.title?.toLowerCase()?.replace(/\s+/g, ''))
+    )"
+    :key="index"
+  >
+    <template v-if="isNavGroup(item)">
+      <!-- Dashboard -->
+      <template
+        v-for="(el, key) in item.children.filter(el => el.title === 'module.dashboard')"
+        :key="`dashboard-${key}`"
+      >
+        <RouterLink
+          :to="el.to"
+          class="text-gray-700 dark:text-gray-200 hover:text-primary text-sm capitalize"
+          :class="{ 'font-semibold text-primary': selected($route, el) }"
         >
-          <template v-if="isNavGroup(item)">
+          {{ $t(el.title) }}
+        </RouterLink>
+      </template>
+
+      <!-- Blockchain Dropdown for tx, blocks, staking -->
+      <details
+        class="relative group"
+        v-if="item.children.some(el =>
+          ['module.tx', 'module.blocks', 'module.staking'].includes(el.title))"
+      >
+        <summary
+          class="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 capitalize list-none flex items-center gap-1"
+        >
+          Blockchain
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </summary>
+        <ul
+          class="absolute top-full mt-2 z-50 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-100 dark:border-gray-700"
+        >
+          <li
+            v-for="(el, key) in item.children.filter(el =>
+              ['module.tx', 'module.blocks', 'module.staking'].includes(el.title)
+            )"
+            :key="`blockchain-${key}`"
+          >
             <RouterLink
-              v-for="(el, key) in item.children"
-              :key="key"
               :to="el.to"
-              class="text-gray-700 dark:text-gray-200 hover:text-primary text-sm capitalize"
-              :class="{ 'font-semibold text-primary': selected($route, el) }"
+              class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              :class="{ 'font-semibold text-blue-600': selected($route, el) }"
             >
               {{ $t(el.title) }}
             </RouterLink>
-          </template>
-          <RouterLink
-            v-if="isNavLink(item)"
-            :to="item.to"
-            class="text-gray-700 dark:text-gray-200 hover:text-primary text-sm capitalize"
-            :class="{ 'font-semibold text-primary': selected($route, item) }"
-          >
-            {{ item.title }}
-          </RouterLink>
-        </template>
-      </div>
+          </li>
+        </ul>
+      </details>
+
+      <!-- Other links (excluding Dashboard, Blockchain items) -->
+      <template
+        v-for="(el, key) in item.children.filter(el =>
+          !['module.dashboard', 'module.tx', 'module.blocks', 'module.staking'].includes(el.title)
+        )"
+        :key="`rest-${key}`"
+      >
+        <RouterLink
+          :to="el.to"
+          class="text-gray-700 dark:text-gray-200 hover:text-primary text-sm capitalize"
+          :class="{ 'font-semibold text-primary': selected($route, el) }"
+        >
+          {{ $t(el.title) }}
+        </RouterLink>
+      </template>
+    </template>
+
+    <!-- Non-group items -->
+    <RouterLink
+      v-if="isNavLink(item)"
+      :to="item.to"
+      class="text-gray-700 dark:text-gray-200 hover:text-primary text-sm capitalize"
+      :class="{ 'font-semibold text-primary': selected($route, item) }"
+    >
+      {{ item.title }}
+    </RouterLink>
+  </template>
+</div>
+
+
 
       <!-- Right: Search, Theme, Language, Wallet -->
       <div class="flex items-center gap-4">
