@@ -369,11 +369,36 @@ const appVersionPatched = computed(() => {
 
 
    <!-- Statistic Cards -->
-    <div class="grid grid-cols-1 gap-4 md:!grid-cols-3 lg:!grid-cols-6 mt-4">
-  <div v-for="(item, key) in store.stats" :key="key">
-    <CardStatisticsVertical v-bind="item" />
+  <!-- Etherscan-style Horizontal Card -->
+<!-- Etherscan-style Info Panel -->
+<!-- Dashboard Overview Box -->
+<div class="bg-base-100 rounded-xl shadow p-4 mt-6">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Left: Stats Blocks (spanning 3 columns) -->
+    <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <CardStatisticsVertical v-bind="store.stats[0]" />
+      <CardStatisticsVertical v-bind="store.stats[1]" />
+      <CardStatisticsVertical v-bind="store.stats[2]" />
+      <CardStatisticsVertical v-bind="store.stats[3]" />
+      <CardStatisticsVertical v-bind="store.stats[4]" />
+      <CardStatisticsVertical v-bind="store.stats[5]" />
+    </div>
+
+    <!-- Right: 14-day Line Chart -->
+  <div class="lg:col-span-1">
+  <div class="bg-base-100 rounded shadow h-full p-4">
+    <h3 class="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-300">
+      Transaction History in 14 Days
+    </h3>
+    <TxsInBlocksChart />
+      </div>
+</div>
+
+
   </div>
-  </div>
+</div>
+
+
 
 <!-- Charts Section with top margin -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">

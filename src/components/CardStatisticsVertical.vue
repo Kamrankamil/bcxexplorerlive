@@ -1,60 +1,53 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue';
-import { controlledComputed } from '@vueuse/core'
+import { Icon } from '@iconify/vue'
 
 interface Props {
-  title: string;
-  color?: string;
-  icon: string;
-  stats: string;
-  change?: number;
-  subtitle?: string;
+  title: string
+  icon: string
+  stats: string
+  subtitle?: string
+  change?: number
+  color?: string
+  bordered?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   color: 'primary',
-});
-
-const isPositive = controlledComputed(
-  () => props.change,
-  () => Math.sign(props.change || 0) === 1
-);
+  bordered: true,
+})
 </script>
 
 <template>
-  <div class="bg-base-100 shadow rounded p-4">
-    <div class="flex items-center justify-center">
-      <div
-        v-if="props.icon"
-        class="relative w-9 h-9 rounded overflow-hidden flex items-center justify-center"
-      >
-        <Icon :class="[`text-${props?.color}`]" :icon="props.icon" size="32" />
-        <div
-          class="absolute top-0 left-0 bottom-0 right-0 opacity-20"
-          :class="[`bg-${props?.color}`]"
-        ></div>
-      </div>
-
-      <div
-        v-if="props.change"
-        :class="isPositive ? 'text-success' : 'text-error'"
-        class="flex items-center text-sm font-semibold"
-      >
-        <span>{{ isPositive ? `+${props.change}` : props.change }}%</span>
-        <Icon :icon="isPositive ? 'mdi-chevron-up' : 'mdi-chevron-down'" />
-      </div>
+  <div
+    class="flex items-center gap-3 px-4 py-3 bg-base-100 rounded shadow-sm"
+    :class="{
+      'border-r last:border-r-0 border-gray-200 dark:border-gray-700': props.bordered
+    }"
+  >
+    <!-- Icon Circle -->
+    <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+      <Icon :icon="icon" class="text-xl" :class="`text-${props.color}`" />
     </div>
 
-    <div class="">
-      <h6 class="text-lg text-center font-semibold mt-2 mb-1">
-        {{ props.stats || '-'}}
-      </h6>
-      <p class="text-sm text-center">
-        {{ props.title }}
-      </p>
+    <!-- Text Content -->
+    <div>
+      <div class="text-sm text-gray-500 dark:text-gray-400 font-medium">
+        {{ title }}
+      </div>
 
-      <div v-if="props.subtitle" size="x-small" class="font-semibold">
-        <span class="truncate">{{ props.subtitle }}</span>
+      <div class="text-base font-semibold text-gray-900 dark:text-white">
+        {{ stats }}
+        <span
+          v-if="change !== undefined"
+          :class="change >= 0 ? 'text-success' : 'text-error'"
+          class="ml-1 text-xs font-bold"
+        >
+          ({{ change >= 0 ? '+' : '' }}{{ change }}%)
+        </span>
+      </div>
+
+      <div v-if="subtitle" class="text-xs text-gray-400">
+        {{ subtitle }}
       </div>
     </div>
   </div>
