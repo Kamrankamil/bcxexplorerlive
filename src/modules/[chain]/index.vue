@@ -4,7 +4,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart, LineChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
 import VChart from 'vue-echarts';
-import TxsInBlocksChart from '@/components/charts/TxsInBlocksChart.vue';
+
 use([CanvasRenderer, BarChart, LineChart, GridComponent, TooltipComponent, LegendComponent]);
 
 import { ref } from 'vue';
