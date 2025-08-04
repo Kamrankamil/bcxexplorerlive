@@ -1,19 +1,148 @@
-<script lang="ts" setup>
-import { computed, ref } from '@vue/reactivity';
-import { useBaseStore, useFormatter } from '@/stores';
-import TxsInBlocksChart from '@/components/charts/TxsInBlocksChart.vue';
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useBaseStore, useFormatter } from '@/stores'
+import TxsInBlocksChart from '@/components/charts/TxsInBlocksChart.vue'
 
-const props = defineProps(['chain']);
+const props = defineProps(['chain'])
 
-const tab = ref('blocks');
-const base = useBaseStore();
-const format = useFormatter();
+const base = useBaseStore()
+const format = useFormatter()
 
-const list = computed(() => base.recents);
+const tab = ref('blocks')
+const isLoaded = ref(false)
+
+const currentPage = ref(1)
+const perPage = 100
+const totalBlocks = ref(0)
+const historicalBlocks = ref<any[]>([])
+
+let interval: NodeJS.Timer | null = null
+
+// ✅ Fetch total count from GraphQL
+const fetchBlockCount = async () => {
+  try {
+    const res = await fetch('http://65.109.78.203:8080/v1/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `query { block_aggregate { aggregate { count } } }`,
+      }),
+    })
+    const result = await res.json()
+    totalBlocks.value = result.data.block_aggregate.aggregate.count
+  } catch (err) {
+    console.error('Error fetching block count:', err)
+  }
+}
+
+// ✅ Fetch paginated historical blocks
+const fetchHistoricalBlocks = async () => {
+  try {
+    isLoaded.value = false
+    const query = `
+      query GetBlocks($limit: Int!, $offset: Int!) {
+        block(order_by: {height: desc}, limit: $limit, offset: $offset) {
+          hash
+          height
+          num_txs
+          proposer_address
+          timestamp
+        }
+      }
+    `
+    const variables = {
+      limit: perPage,
+      offset: (currentPage.value - 1) * perPage,
+    }
+
+    const res = await fetch('http://65.109.78.203:8080/v1/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables }),
+    })
+
+    const result = await res.json()
+    historicalBlocks.value = result?.data?.block || []
+    isLoaded.value = true
+  } catch (error) {
+    console.error('Block fetch failed:', error)
+    historicalBlocks.value = []
+    isLoaded.value = true
+  }
+}
+
+// ✅ Merge live data from base.recents
+const combinedBlocks = computed(() => {
+  const liveBlocks = base.recents.map(b => ({
+    height: Number(b.block.header.height),
+    hash: b.block_id?.hash,
+    proposer_address: b.block.header.proposer_address,
+    num_txs: b.block.data?.txs?.length || 0,
+    round: b.block.last_commit?.round,
+    timestamp: b.block.header.time,
+    isLive: true,
+  }))
+
+  const liveHeights = new Set(liveBlocks.map(b => b.height))
+
+  const historic = historicalBlocks.value
+    .filter(b => !liveHeights.has(Number(b.height)))
+    .map(b => ({
+      height: Number(b.height),
+      hash: b.hash,
+      proposer_address: b.proposer_address,
+      num_txs: b.num_txs,
+      round: b.round || null,
+      timestamp: b.timestamp,
+      isLive: false,
+    }))
+
+  return [...liveBlocks, ...historic].sort((a, b) => b.height - a.height)
+})
+
+const paginatedBlocks = computed(() => {
+  const start = (currentPage.value - 1) * perPage
+  return combinedBlocks.value.slice(start, start + perPage)
+})
+
+const totalPages = computed(() => Math.ceil(totalBlocks.value / perPage))
+
+const goNext = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++
+}
+const goPrev = () => {
+  if (currentPage.value > 1) currentPage.value--
+}
+
+// ✅ Auto-refresh live + historical (only on first page)
+const setupAutoRefresh = () => {
+  if (interval) clearInterval(interval)
+  if (currentPage.value === 1) {
+    interval = setInterval(() => {
+      fetchBlockCount()
+      fetchHistoricalBlocks()
+    }, 1000000)
+  }
+}
+onUnmounted(() => {
+  if (interval) clearInterval(interval)
+})
+watch(currentPage, () => {
+  fetchHistoricalBlocks()
+  setupAutoRefresh()
+})
+
+onMounted(async () => {
+  await fetchBlockCount()
+  await fetchHistoricalBlocks()
+  setupAutoRefresh()
+})
 </script>
+
 
 <template>
   <div>
+    <!-- Tabs -->
     <div class="tabs tabs-boxed bg-transparent mb-4">
       <a
         class="tab text-gray-400 uppercase"
@@ -30,10 +159,11 @@ const list = computed(() => base.recents);
       </RouterLink>
     </div>
 
+    <!-- Block Table -->
     <div v-show="tab === 'blocks'">
       <TxsInBlocksChart />
 
-      <div class="overflow-x-auto mt-4 rounded bg-base-100 shadow">
+      <div v-if="isLoaded" class="overflow-x-auto mt-4 rounded bg-base-100 shadow">
         <table class="table table-compact w-full">
           <thead>
             <tr class="bg-gray-50 dark:bg-[#1c2234]">
@@ -41,43 +171,53 @@ const list = computed(() => base.recents);
               <th>Age</th>
               <th>Generated By</th>
               <th>Transactions</th>
-                <th>Round	
-              </th>
-        
-                    <th>hash	
-                   </th>
-
-   
-                      </tr>
-                 </thead>
-                <tbody>
-                          <tr v-for="item in list" :key="item.block.header.height" class="hover">
-                  <td>
-                    <RouterLink
-                      class="link link-primary no-underline"
-                      :to="`/${chain}/block/${item.block.header.height}`"
-                    >
-                      {{ item.block.header.height }}
-                    </RouterLink>
-                  </td>
-                 <td>{{ format.toDay(item.block?.header?.time, 'from') }}</td>
-                  <td>
-                    
-                      {{ format.validator(item.block?.header?.proposer_address) }}
-                
-                  </td>
-              
-                    <td>{{ item.block?.data?.txs.length || 0 }}</td>
-                              <td>{{ item.block?.last_commit?.round}}</td>
-                    <td>
-                
-                       <div class="text-xs text-gray-400">   {{ item.block_id.hash }}</div>
-                    </td> 
- 
-             
-                       </tr>
-                </tbody>
+              <th>Hash</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in paginatedBlocks" :key="item.height" class="hover">
+              <td>
+                <RouterLink
+                  class="link link-primary no-underline"
+                  :to="`/${chain}/block/${item.height}`"
+                >
+                  {{ item.height }}
+                </RouterLink>
+              </td>
+              <td>{{ format.toDay(item.time, 'from') }}</td>
+              <td>{{ item.proposer_address }}</td>
+              <td>{{ item.num_txs }}</td>
+            
+              <td><div class="text-xs text-gray-400">{{ item.hash }}</div></td>
+            </tr>
+          </tbody>
         </table>
+      </div>
+
+      <div v-else class="text-center text-gray-400 py-4">Loading block data...</div>
+
+      <!-- Pagination Controls -->
+      <div
+        v-if="isLoaded"
+        class="flex items-center justify-between mt-4 px-2 text-sm text-gray-500"
+      >
+        <button
+          @click="goPrev"
+          :disabled="currentPage === 1"
+          class="btn btn-sm btn-outline"
+        >
+          Previous
+        </button>
+
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+
+        <button
+          @click="goNext"
+          :disabled="currentPage === totalPages"
+          class="btn btn-sm btn-outline"
+        >
+          Next
+        </button>
       </div>
     </div>
   </div>

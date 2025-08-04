@@ -1,7 +1,7 @@
 {
     "chain_name": "buycex",
     "coingecko": "",
-    "api": ["https://endpoint.buycex.net"],
+    "api": ["https://api.buycex.net"],
     "rpc": ["https://endpoint.buycex.net"],
     "snapshot_provider": "",
     "sdk_version": "0.46.10",
