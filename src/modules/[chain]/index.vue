@@ -98,6 +98,8 @@ import {
 import { useIndexModule, colorMap, tickerUrl } from './indexStore';
 
 import TxsInBlocksChart from '@/components/charts/TxsInBlocksChart.vue';
+import TxsInBlocksChartDashboard from '@/components/charts/TxsInBlocksChartDashboard.vue';
+
 import CardStatisticsVertical from '@/components/CardStatisticsVertical.vue';
 import ProposalListItem from '@/components/ProposalListItem.vue';
 import ArrayObjectElement from '@/components/dynamic/ArrayObjectElement.vue'
@@ -386,12 +388,10 @@ const appVersionPatched = computed(() => {
 
     <!-- Right: 14-day Line Chart -->
   <div class="lg:col-span-1">
-  <div class="bg-base-100 rounded shadow h-full p-4">
-    <h3 class="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-300">
-      Transaction History in 14 Days
-    </h3>
-    <TxsInBlocksChart />
-      </div>
+
+ 
+    <TxsInBlocksChartDashboard />
+  
 </div>
 
 
@@ -403,9 +403,7 @@ const appVersionPatched = computed(() => {
 <!-- Charts Section with top margin -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
   <div class="bg-base-100 rounded p-4 shadow">
-    <h3 class="font-semibold text-base mb-2">Daily User Transactions</h3>
-    <v-chart class="h-72 w-full" :option="dailyUserTransactionsOption" autoresize />
-  </div>
+    <TxsInBlocksChart />  </div>
 
   <div class="bg-base-100 rounded p-4 shadow">
     <h3 class="font-semibold text-base mb-2">Network Fees (APT)</h3>
